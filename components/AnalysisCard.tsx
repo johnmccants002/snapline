@@ -20,8 +20,14 @@ export function AnalysisCard({ id }: { id: string }) {
             <Text style={styles.heading}>{analysis.confidence} / 100</Text>
           </View>
           <Text style={styles.muted}>
-            AI assessment strength · Not a calibrated win probability
+            Confidence in this conclusion · Not a win or cover probability
           </Text>
+          {analysis.lean === 'PASS' && (
+            <Text style={styles.muted}>
+              PASS means no directional advantage is established. Confidence in
+              PASS is not a betting signal.
+            </Text>
+          )}
           <Text style={styles.text}>{analysis.summary}</Text>
           <Text style={styles.label}>Market evidence</Text>
           <Text style={styles.text}>{analysis.marketAnalysis}</Text>

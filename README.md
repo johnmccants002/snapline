@@ -100,7 +100,9 @@ Line history shows median consensus per stored observation for the last seven da
 
 ## AI analysis
 
-Set `OPENAI_API_KEY`, deploy `analyze-game`, and tap **Analyze game**. The server gathers current normalized odds and stored history, and supplies explicit unavailable states for weather, injuries, and the quantitative model. OpenAI uses a strict JSON schema; the result is validated again with Zod and confidence is clamped to 0–100. Refusals, incomplete output, and schema failures return useful errors.
+Set `OPENAI_API_KEY`, deploy `analyze-game`, and tap **Analyze game**. The server gathers current normalized odds and stored history, and supplies explicit unavailable states for weather, injuries, and the quantitative model. OpenAI uses a strict JSON schema; the result is validated again with Zod and confidence must be a whole number on the 0–100 scale (integer overflows are defensively clamped; fractional output such as 0.6 is rejected). Refusals, incomplete output, and schema failures return useful errors.
+
+The current market-only policy enforces PASS when a spread exists and INSUFFICIENT_DATA when it does not. Favorite status, sportsbook agreement, and movement alone cannot authorize HOME/AWAY leans. Key factors remain neutral. The prompt distinguishes winning outright from covering the spread. Confidence describes support for the conclusion, including PASS, and is not a betting signal. Version 2 cache reads exclude earlier analyses and revalidate stored output.
 
 Every saved row preserves the exact structured input, model, analysis version, timestamp, and validated output. Confidence is labeled as qualitative assessment strength, **not a calibrated win probability**. Analyses are cached for ten minutes per game; paid attempts are bounded to one per game per ten minutes and one globally per twenty seconds. A failed attempt also consumes that lease. Set provider-side spending limits appropriate to your deployment. Before broad public distribution, add per-user/device abuse controls; the initial shared gates bound spend but can be exhausted by another caller.
 
@@ -129,6 +131,8 @@ npx expo export --platform web
 ```
 
 `test:db` applies the real migration to an ephemeral PGlite PostgreSQL instance and verifies snapshot idempotency, append-only behavior, budget gates, RLS, public reads, and denied client writes. It does not replace a hosted Supabase integration check. Tests use clearly isolated synthetic fixtures; the app never displays fixture data. CI runs these checks and exports the web bundle.
+
+Optional paid model regression evaluation: `npm run eval:analysis` uses the server key from `.env.providers` to run four synthetic cases (home favorite, away favorite, pick’em, and missing spread). It validates decisions and integer confidence, prints prose for human review, and does not write database records. This evaluation is not run by CI.
 
 Live verification checklist after configuring credentials:
 

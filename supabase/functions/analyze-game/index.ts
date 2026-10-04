@@ -10,8 +10,11 @@ import { currentOdds } from '../_shared/odds.ts';
 import { storedHistory } from '../_shared/stored.ts';
 import {
   analysisInstructions,
-  analysisJsonSchema,
-  validateAnalysis,
+  ANALYSIS_VERSION,
+  marketDecision,
+  marketAnalysisJsonSchema,
+  readCachedAnalysis,
+  validateMarketAnalysis,
 } from '../_shared/analysis-schema.ts';
 serve(async (req) => {
   const id = await gameId(req),
@@ -36,18 +39,16 @@ serve(async (req) => {
   const { databaseId, points } = await storedHistory(id);
   const { data: previous, error: previousError } = await db
     .from('game_analyses')
-    .select('result,created_at,model')
+    .select('result,created_at,model,analysis_version')
     .eq('game_id', databaseId)
+    .eq('analysis_version', ANALYSIS_VERSION)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (previousError) throw previousError;
-  if (previous && Date.now() - Date.parse(previous.created_at) < 600000)
-    return {
-      analysis: previous.result,
-      createdAt: previous.created_at,
-      model: previous.model,
-    };
+  const decision = marketDecision(game.market.consensusSpread);
+  const cached = readCachedAnalysis(previous, decision);
+  if (cached) return cached;
   const key = Deno.env.get('OPENAI_API_KEY');
   if (!key) throw new HttpError(503, 'AI analysis is not configured yet.');
   if (
@@ -56,6 +57,11 @@ serve(async (req) => {
   )
     throw new HttpError(429, 'Analysis limit reached. Please try again later.');
   const input = {
+    analysisPolicy: {
+      version: ANALYSIS_VERSION,
+      evidenceMode: 'market_only',
+      requiredLean: decision,
+    },
     game: {
       homeTeam: game.homeTeam,
       awayTeam: game.awayTeam,
@@ -100,7 +106,7 @@ serve(async (req) => {
           type: 'json_schema',
           name: 'game_analysis',
           strict: true,
-          schema: analysisJsonSchema,
+          schema: marketAnalysisJsonSchema(decision),
         },
       },
     }),
@@ -132,7 +138,7 @@ serve(async (req) => {
       .filter((item: { type: string }) => item.type === 'output_text')
       .map((item: { text: string }) => item.text)
       .join('');
-    analysis = validateAnalysis(JSON.parse(text));
+    analysis = validateMarketAnalysis(JSON.parse(text), decision);
   } catch {
     throw new HttpError(
       502,
@@ -143,7 +149,7 @@ serve(async (req) => {
   const { error } = await db.from('game_analyses').insert({
     game_id: databaseId,
     model,
-    analysis_version: '1',
+    analysis_version: ANALYSIS_VERSION,
     lean: analysis.lean,
     confidence: analysis.confidence,
     summary: analysis.summary,
