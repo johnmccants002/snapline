@@ -109,3 +109,20 @@ it('validates structured analysis and clamps confidence', () => {
   expect(() => validateAnalysis({ ...analysis, confidence: '54' })).toThrow();
   expect(() => validateAnalysis({ ...analysis, extra: true })).toThrow();
 });
+
+describe('analysis confidence scale', () => {
+  it.each([0, 1, 60, 100])(
+    'accepts integer %s without rescaling',
+    (confidence) => {
+      expect(validateAnalysis({ ...analysis, confidence }).confidence).toBe(
+        confidence,
+      );
+    },
+  );
+  it.each([0.6, 60.5, NaN, Infinity, -Infinity])(
+    'rejects ambiguous/non-finite confidence %s',
+    (confidence) => {
+      expect(() => validateAnalysis({ ...analysis, confidence })).toThrow();
+    },
+  );
+});

@@ -12,6 +12,7 @@
     "constants/**/*.ts",
     "types/**/*.ts",
     "tests/market.test.ts",
+    "tests/analysis-policy.test.ts",
     "expo-env.d.ts"
   ],
   "exclude": ["node_modules", "supabase/functions/*/index.ts"]

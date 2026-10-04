@@ -44,7 +44,8 @@
     "format:check": "prettier --check .",
     "check:edge": "deno check --config supabase/functions/deno.json supabase/functions/*/index.ts",
     "test:db": "node scripts/test-db.mjs",
-    "sync:odds": "node --env-file=.env.server scripts/sync-odds.mjs"
+    "sync:odds": "node --env-file=.env.server scripts/sync-odds.mjs",
+    "eval:analysis": "deno run --config supabase/functions/deno.json --env-file=.env.providers --allow-env=OPENAI_API_KEY,OPENAI_MODEL --allow-net=api.openai.com scripts/evaluate-analysis.ts"
   },
   "private": true,
   "engines": {
