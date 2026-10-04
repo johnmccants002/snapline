@@ -1,0 +1,5 @@
+node_modules
+dist
+.expo
+supabase/functions/deno.lock
+package-lock.json

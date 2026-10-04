@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Snapline",
+    "slug": "snapline",
+    "scheme": "snapline",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "plugins": ["expo-router"],
+    "web": { "bundler": "metro" },
+    "ios": { "supportsTablet": true },
+    "android": { "package": "com.snapline.app" }
+  }
+}

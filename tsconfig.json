@@ -1,0 +1,18 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": { "@/*": ["./*"] },
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "app/**/*.tsx",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+    "constants/**/*.ts",
+    "types/**/*.ts",
+    "tests/market.test.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": ["node_modules", "supabase/functions/*/index.ts"]
+}

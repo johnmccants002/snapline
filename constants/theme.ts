@@ -1,0 +1,62 @@
+import { StyleSheet } from 'react-native';
+export const colors = {
+  background: '#0B1016',
+  card: '#121A24',
+  border: '#25313F',
+  text: '#F2F5F8',
+  muted: '#99A9BA',
+  accent: '#9CE4CB',
+  subtle: '#1A2832',
+  warning: '#E9C17D',
+};
+export const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: {
+    padding: 20,
+    gap: 16,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    paddingBottom: 48,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: 20,
+    gap: 14,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  heading: { color: colors.text, fontSize: 20, fontWeight: '700' },
+  label: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+  },
+  text: { color: colors.text, fontSize: 15, lineHeight: 23 },
+  muted: { color: colors.muted, fontSize: 13, lineHeight: 21 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  button: {
+    backgroundColor: colors.accent,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    minHeight: 48,
+  },
+  buttonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  divider: { height: 1, backgroundColor: colors.border },
+});
