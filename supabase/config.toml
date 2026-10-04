@@ -423,7 +423,7 @@ import_map = "./functions/deno.json"
 verify_jwt = false
 import_map = "./functions/deno.json"
 
-# Authorization is explicitly enforced inside the handler (service role only).
+# Authorization is explicitly enforced inside the handler (dedicated sync secret).
 [functions.sync-odds]
 verify_jwt = false
 import_map = "./functions/deno.json"

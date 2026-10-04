@@ -54,6 +54,7 @@ Create a gitignored `.env.providers` file:
 
 ```dotenv
 ODDS_API_KEY=YOUR_ODDS_API_KEY
+SYNC_SECRET=YOUR_RANDOM_64_CHARACTER_HEX_SECRET
 # Optional:
 OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 OPENAI_MODEL=gpt-4.1-mini
@@ -66,7 +67,7 @@ npx supabase functions deploy nfl-odds sync-odds analyze-game --use-api
 
 Supabase supplies `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to hosted Edge Functions. Do not upload these reserved names with `secrets set`. `WEATHER_API_KEY` and `INJURY_API_KEY` are reserved for future adapters; setting them alone does not enable an integration.
 
-The function configuration intentionally disables gateway JWT checks: reads and analysis are public, protected by database-backed cost gates. `sync-odds` additionally enforces a service-role bearer token inside its handler. CORS allows web and native clients. Public keys are identification, not an authorization boundary.
+The function configuration intentionally disables gateway JWT checks: reads and analysis are public, protected by database-backed cost gates. `sync-odds` additionally enforces a dedicated `x-sync-secret` header inside its handler. CORS allows web and native clients. Public keys are identification, not an authorization boundary.
 
 ## Run the app
 
@@ -86,16 +87,16 @@ Create a separate, gitignored `.env.server` for the local administrator script:
 
 ```dotenv
 SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+SYNC_SECRET=THE_SAME_SYNC_SECRET_FROM_ENV_PROVIDERS
 ```
 
 ```sh
 npm run sync:odds
 ```
 
-Run again after at least one minute to collect a distinct observation. The script prints game and inserted snapshot counts. Every sync writes a complete sportsbook set with a shared observation timestamp, transactionally. Repeating the same cached observation inserts nothing. New observations are preserved even when prices are unchanged, allowing accurate market coverage over time. The SQL function serializes concurrent sync writes.
+Run again after at least one minute to collect a distinct observation. Generate the sync secret with `openssl rand -hex 32`, store it in both server files, and deploy it with the provider secrets. The script prints game and inserted snapshot counts. Every sync writes a complete sportsbook set with a shared observation timestamp, transactionally. Repeating the same cached observation inserts nothing. New observations are preserved even when prices are unchanged, allowing accurate market coverage over time. The SQL function serializes concurrent sync writes.
 
-Line history shows median consensus per stored observation for the last seven days. It does not reconstruct a historical opener, infer values before collection, or carry missing books forward. The chart labels the first observed line explicitly. A future scheduler can POST to `sync-odds` using a server-held service-role token; no schedule is installed by this repository.
+Line history shows median consensus per stored observation for the last seven days. It does not reconstruct a historical opener, infer values before collection, or carry missing books forward. The chart labels the first observed line explicitly. A future scheduler can POST to `sync-odds` using a server-held sync secret; no schedule is installed by this repository.
 
 ## AI analysis
 
@@ -113,7 +114,7 @@ npx supabase db reset
 npx supabase functions serve --env-file .env.providers
 ```
 
-Use the local API URL and public key reported by `supabase status` in `.env.local`; use the local service key in `.env.server`. Android emulator access normally requires `10.0.2.2` in place of localhost; a physical phone needs a reachable LAN address. The functions receive local server credentials automatically.
+Use the local API URL and public key reported by `supabase status` in `.env.local`; use the same sync secret in `.env.server`. Android emulator access normally requires `10.0.2.2` in place of localhost; a physical phone needs a reachable LAN address. The functions receive local server credentials automatically.
 
 ## Verification
 

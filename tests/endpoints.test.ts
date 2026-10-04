@@ -27,7 +27,7 @@ beforeEach(async () => {
   vi.stubGlobal('Deno', {
     env: {
       get: (key: string) =>
-        key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test-service-key' : undefined,
+        key === 'SYNC_SECRET' ? 'test-service-key' : undefined,
     },
   });
   await import('../supabase/functions/sync-odds/index');
@@ -49,7 +49,7 @@ it('does not store a stale fallback as a new observation', async () => {
     mocks.handler!(
       new Request('https://test/sync', {
         method: 'POST',
-        headers: { Authorization: 'Bearer test-service-key' },
+        headers: { 'x-sync-secret': 'test-service-key' },
       }),
     ),
   ).rejects.toMatchObject({ status: 503 });
@@ -66,7 +66,7 @@ it('passes normalized games and original observation time to the transaction', a
     mocks.handler!(
       new Request('https://test/sync', {
         method: 'POST',
-        headers: { Authorization: 'Bearer test-service-key' },
+        headers: { 'x-sync-secret': 'test-service-key' },
       }),
     ),
   ).resolves.toMatchObject({

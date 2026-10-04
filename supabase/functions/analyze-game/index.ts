@@ -105,11 +105,19 @@ serve(async (req) => {
       },
     }),
   });
-  if (!response.ok)
+  if (!response.ok) {
+    const failure = await response.json().catch(() => null);
+    const code = failure?.error?.code;
+    if (code === 'credit_balance_exhausted' || code === 'insufficient_quota')
+      throw new HttpError(
+        503,
+        'AI analysis is unavailable because the provider credit balance is exhausted. The project owner needs to add OpenAI API credits.',
+      );
     throw new HttpError(
       503,
       'AI provider is unavailable. Please try again later.',
     );
+  }
   const raw = await response.json();
   let analysis;
   try {
