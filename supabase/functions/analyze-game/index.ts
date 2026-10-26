@@ -1,3 +1,4 @@
+import { marketNarrative } from '../_shared/market-facts.ts';
 import {
   admin,
   claim,
@@ -47,7 +48,8 @@ serve(async (req) => {
     .maybeSingle();
   if (previousError) throw previousError;
   const decision = marketDecision(game.market.consensusSpread);
-  const cached = readCachedAnalysis(previous, decision);
+  const narrative = marketNarrative(game.market, points);
+  const cached = readCachedAnalysis(previous, decision, Date.now(), narrative);
   if (cached) return cached;
   const key = Deno.env.get('OPENAI_API_KEY');
   if (!key) throw new HttpError(503, 'AI analysis is not configured yet.');
@@ -57,6 +59,7 @@ serve(async (req) => {
   )
     throw new HttpError(429, 'Analysis limit reached. Please try again later.');
   const input = {
+    groundedNarrative: narrative,
     analysisPolicy: {
       version: ANALYSIS_VERSION,
       evidenceMode: 'market_only',
@@ -106,7 +109,7 @@ serve(async (req) => {
           type: 'json_schema',
           name: 'game_analysis',
           strict: true,
-          schema: marketAnalysisJsonSchema(decision),
+          schema: marketAnalysisJsonSchema(decision, narrative),
         },
       },
     }),
@@ -138,7 +141,7 @@ serve(async (req) => {
       .filter((item: { type: string }) => item.type === 'output_text')
       .map((item: { text: string }) => item.text)
       .join('');
-    analysis = validateMarketAnalysis(JSON.parse(text), decision);
+    analysis = validateMarketAnalysis(JSON.parse(text), decision, narrative);
   } catch {
     throw new HttpError(
       502,

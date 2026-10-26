@@ -1,3 +1,4 @@
+import { marketNarrative } from '../supabase/functions/_shared/market-facts.ts';
 // Opt-in paid evaluation. Synthetic cases are never persisted or shown in the app.
 import {
   ANALYSIS_VERSION,
@@ -12,7 +13,21 @@ if (!key) throw new Error('Set OPENAI_API_KEY in .env.providers.');
 const model = Deno.env.get('OPENAI_MODEL') || 'gpt-4.1-mini';
 for (const spread of [-4.5, 4.5, 0, null]) {
   const decision = marketDecision(spread);
+  const narrative = marketNarrative(
+    {
+      consensusSpread: spread,
+      sportsbooks:
+        spread === null
+          ? []
+          : [
+              { key: 'a', homeSpread: spread },
+              { key: 'b', homeSpread: spread + 0.5 },
+            ],
+    },
+    [],
+  );
   const input = {
+    groundedNarrative: narrative,
     analysisPolicy: {
       version: ANALYSIS_VERSION,
       evidenceMode: 'market_only',
@@ -57,14 +72,26 @@ for (const spread of [-4.5, 4.5, 0, null]) {
           type: 'json_schema',
           name: 'game_analysis',
           strict: true,
-          schema: marketAnalysisJsonSchema(decision),
+          schema: marketAnalysisJsonSchema(decision, narrative),
         },
       },
     }),
     signal: AbortSignal.timeout(45000),
   });
-  if (!response.ok)
-    throw new Error(`Provider HTTP ${response.status}; response body omitted.`);
+  if (!response.ok) {
+    const failure = await response.json().catch(() => null);
+    const code = failure?.error?.code;
+    const reason = [
+      'insufficient_quota',
+      'rate_limit_exceeded',
+      'credit_balance_exhausted',
+    ].includes(code)
+      ? code
+      : 'unknown';
+    throw new Error(
+      `Provider HTTP ${response.status} (${reason}); response body omitted.`,
+    );
+  }
   const raw = await response.json();
   if (raw.status !== 'completed') throw new Error('Incomplete response.');
   const content = raw.output.flatMap(
@@ -77,7 +104,11 @@ for (const spread of [-4.5, 4.5, 0, null]) {
     .filter((item: { type: string }) => item.type === 'output_text')
     .map((item: { text: string }) => item.text)
     .join('');
-  const analysis = validateMarketAnalysis(JSON.parse(text), decision);
+  const analysis = validateMarketAnalysis(
+    JSON.parse(text),
+    decision,
+    narrative,
+  );
   console.log(
     JSON.stringify({
       homeSpread: spread,
@@ -89,5 +120,5 @@ for (const spread of [-4.5, 4.5, 0, null]) {
   );
 }
 console.log(
-  'All four live cases passed schema and evidence-policy validation. Review prose above for semantic quality.',
+  'All four live cases passed schema and evidence-policy validation. Exact server-computed prose verified in all cases.',
 );
