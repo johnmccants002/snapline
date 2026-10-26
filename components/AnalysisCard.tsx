@@ -37,7 +37,9 @@ export function AnalysisCard({ id }: { id: string }) {
           {analysis.injuryAnalysis && (
             <Text style={styles.text}>{analysis.injuryAnalysis}</Text>
           )}
-          <Text style={styles.label}>Key factors</Text>
+          {analysis.keyFactors.length > 0 && (
+            <Text style={styles.label}>Key factors</Text>
+          )}
           {analysis.keyFactors.map((factor, i) => (
             <View key={i} style={{ gap: 4 }}>
               <Text style={styles.text}>{factor.factor}</Text>

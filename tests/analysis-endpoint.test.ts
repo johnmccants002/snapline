@@ -1,3 +1,4 @@
+import { marketNarrative } from '../supabase/functions/_shared/market-facts';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { ANALYSIS_VERSION } from '../supabase/functions/_shared/analysis-schema';
 const mocks = vi.hoisted(() => ({
@@ -70,8 +71,7 @@ vi.mock('../supabase/functions/_shared/stored.ts', () => ({
 const analysis = {
   lean: 'PASS',
   confidence: 60,
-  summary: 'No edge established.',
-  marketAnalysis: 'Agreement does not imply a covering advantage.',
+  ...marketNarrative({ consensusSpread: -4.5, sportsbooks: [] }, []),
   weatherAnalysis: null,
   injuryAnalysis: null,
   keyFactors: [],
@@ -150,10 +150,43 @@ it('serves only validated current-version cache without paid inference', async (
 });
 it('requires INSUFFICIENT_DATA and zero confidence when spread is absent', async () => {
   mocks.spread = null;
-  const missing = { ...analysis, lean: 'INSUFFICIENT_DATA', confidence: 0 };
+  const missing = {
+    ...analysis,
+    ...marketNarrative({ consensusSpread: null, sportsbooks: [] }, []),
+    lean: 'INSUFFICIENT_DATA',
+    confidence: 0,
+  };
   mocks.fetch.mockResolvedValue(provider(missing));
   await expect(run()).resolves.toMatchObject({ analysis: missing });
   expect(
     mocks.insert.mock.calls[0][0].input_snapshot.analysisPolicy.requiredLean,
   ).toBe('INSUFFICIENT_DATA');
+});
+
+it('rejects invented prose even when lean and confidence are valid', async () => {
+  mocks.fetch.mockResolvedValue(
+    provider({
+      ...analysis,
+      summary: 'All books agree and the home team should cover.',
+    }),
+  );
+  await expect(run()).rejects.toMatchObject({ status: 502 });
+  expect(mocks.insert).not.toHaveBeenCalled();
+});
+it('invalidates cache when current market facts change', async () => {
+  mocks.previous = {
+    result: analysis,
+    analysis_version: ANALYSIS_VERSION,
+    model: 'test',
+    created_at: new Date().toISOString(),
+  };
+  mocks.spread = 4.5;
+  mocks.fetch.mockResolvedValue(
+    provider({
+      ...analysis,
+      ...marketNarrative({ consensusSpread: 4.5, sportsbooks: [] }, []),
+    }),
+  );
+  await run();
+  expect(mocks.fetch).toHaveBeenCalledOnce();
 });
